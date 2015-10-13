@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import org.json.JSONArray;
 
@@ -12,11 +13,12 @@ import ai.exception.BopomofoException;
 import ai.net.BopomofoCrawler;
 
 public class DB_Bopomofo {
-	private static final int Start_id = 11001;
-	private static final int End_id = 12000 ;
+	private static final int Start_id = 261057;
+	private static final int End_id = 470000 ;
 	public static void main(String[] argv){
 		Connection c = null;
 	    Statement stmt = null;
+	    HashMap<String, String[]> isRecorded = new HashMap<String,String[]>();
 	    try {
 	      Class.forName("org.sqlite.JDBC");
 	      c = DriverManager.getConnection("jdbc:sqlite:ConceptNet.db");
@@ -24,15 +26,15 @@ public class DB_Bopomofo {
 	      System.out.println("Opened database successfully");
 
 	      stmt = c.createStatement();
-	      ResultSet rs = stmt.executeQuery( "SELECT * FROM Relation;" );
+	      ResultSet rs = stmt.executeQuery( "SELECT * FROM Relation where id>261057;" );
 	      
 	      while ( rs.next()) {
 	    	  
 		         int id = rs.getInt("id");
 		         if(id < Start_id)
 		        	 continue;
-		         if(id > End_id)
-		        	 break;
+		         /*if(id > End_id)
+		        	 break;*/
 		         System.out.println(id);
 		         String  Start = rs.getString("Start");	         
 		         String  End = rs.getString("End");
@@ -41,8 +43,18 @@ public class DB_Bopomofo {
 		         String[] Bopomofo_Start;
 		         String[] Bopomofo_End;
 		         try{
-			         Bopomofo_Start = BopomofoCrawler.getBopomofo(Start);
-			         Bopomofo_End = BopomofoCrawler.getBopomofo(End);
+		        	 if(isRecorded.containsKey(Start)) Bopomofo_Start=isRecorded.get(Start);
+		        	 else 
+		        	 {
+		        		 Bopomofo_Start = BopomofoCrawler.getBopomofo(Start);
+		        		 isRecorded.put(Start, Bopomofo_Start);
+		        	 }
+		        	 if(isRecorded.containsKey(End)) Bopomofo_End=isRecorded.get(End);
+		        	 else 
+		        	 {
+		        		 Bopomofo_End = BopomofoCrawler.getBopomofo(End);
+		        		 isRecorded.put(End, Bopomofo_End);
+		        	 }
 		         }
 		         catch (BopomofoException e){
 		        	 System.err.println(e.getMessage());
