@@ -8,6 +8,8 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 
 import ai.exception.BopomofoException;
 import ai.exception.RelationConvertException;
@@ -71,21 +73,29 @@ public class Database {
 					/* TODO 修正某些relation*/
 					String surfaceText = rs.getString("SurfaceText");
 					relation = fixRelation(relation, surfaceText);
+					JSONArray pronuce;
+					//System.out.println(rs.getInt("id")+ "  " + surfaceText);
 					if (startWord.equals(topic)){
 						word = endWord;
+						if(rs.getString("Bopomofo_End")==null) continue;
+						pronuce=new JSONArray(rs.getString("Bopomofo_End"));
 						startOrEnd = Relation.END;
 					}
 					else if (endWord.equals(topic)){
-						word = startWord;
+						word = startWord;						
+						if(rs.getString("Bopomofo_End")==null) continue;
+						pronuce=new JSONArray(rs.getString("Bopomofo_Start"));
 						startOrEnd = Relation.START;
 					}
 					else{
 						//System.err.println("warning : ConceptNet gives a json object without corresponding start wrod / end word ( "+startWord+" , "+endWord+" )");
 						continue;
 					}
-							
+					String[] tmp = new String[pronuce.length()];
+					for(int i=0;i<pronuce.length();i++) tmp[i]=new String(pronuce.getString(i));
+						
 					/* TODO 把特定的介係詞加入word尾端*/
-					final String[] detailLocation = {"下","外","裡"};
+					/*final String[] detailLocation = {"下","外","裡"};
 					if(relation == Relation.AtLocation){
 						extraData = rs.getString("surfaceText");
 						extraData = extraData.substring(extraData.length()-2, extraData.length()-1);
@@ -94,19 +104,16 @@ public class Database {
 								word = word+temp;
 							}
 						}
-					}
+					}*/
 							
 					if (word.length() <= 3){
 						if (!isRecorded.containsKey(word)){
 							isRecorded.put(word, true);
 							wordType = Relation.getWordType(relation,startOrEnd);
-							try {//System.out.println(word);
-								tempWordList[count] =  new ChineseWord(word, BopomofoCrawler.getBopomofo(word), wordType, relation, startOrEnd,surfaceText);
-								count += 1;
-							} catch (BopomofoException e) {
-								System.err.println(e.getMessage());
-								continue;	
-							}
+							//System.out.println(rs.getInt("id")+ "  " + word);
+							//for(int i=0;i<tmp.length;i++) System.out.println(tmp[i]);
+							tempWordList[count] =  new ChineseWord(word, tmp, wordType, relation, startOrEnd,surfaceText);
+							count += 1;
 						}
 						else{
 							//System.out.println(word + " 已經出現過");
@@ -122,6 +129,9 @@ public class Database {
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 			}
 		System.out.println("從 concpt net 上獲取了 "+count+" 個詞");
 		return Arrays.copyOf(tempWordList, count);
