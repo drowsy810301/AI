@@ -1,0 +1,98 @@
+#tag 編號請不要超過100
+0 (是) (一種) /r/IsA_END
+0 (一種) /r/IsA_END
+
+1 /r/PartOf_END (的) (部分)
+1 /r/PartOf_END (的) (一部分)
+
+2 (須要/用到) /r/UsedFor_START
+2 (會須要/會用到) /r/UsedFor_START
+2 (會) (須要/用到) /r/UsedFor_START
+
+17 (可以/用來) /r/UsedFor_END
+17 (能用來/能拿來) /r/UsedFor_END
+17 (能) (用來/拿來) /r/UsedFor_END
+
+3 (能夠/可以) /r/CapableOf_END
+3 (有能力/有辦法) /r/CapableOf_END
+3 (有) (能力/辦法) /r/CapableOf_END
+3 (能夠/可以) /r/CapableOf0_END
+3 (有) (能力/辦法) /r/CapableOf0_END
+3 (有能力/有辦法) /r/CapableOf0_END
+3 TOPIC (會) /r/CapableOf0_END
+3 TOPIC (能/會) /r/CapableOf_END
+
+4 (所以會) /r/Causes0_END
+4 (會帶來) /r/Causes1_END
+4 (會) (帶來) /r/Causes1_END
+4 (會引起) /r/Causes2_END
+4 (會) (引起) /r/Causes2_END
+4 (會讓你) /r/Causes3_END
+4 (會) (讓你) /r/Causes3_END
+4 (會導致) /r/Causes_END
+4 (會) (導致) /r/Causes_END
+4 (因此) /r/Causes0_END
+4 (帶來) /r/Causes1_END
+4 (引起) /r/Causes2_END
+4 (讓你) /r/Causes3_END
+4 (導致) /r/Causes_END
+
+5 (由/用) /r/MadeOf_END (製成)
+5 (由/用) /r/MadeOf0_END (組成)
+5 /r/MadeOf_END (製成)
+5 /r/MadeOf0_END (組成)
+
+18 /r/MadeOf_START (的) (原料/基礎)
+
+6 (讓你想) /r/CausesDesire_END
+6 (使你) /r/CausesDesire_END
+
+7 /r/SymbolOf_END (的) (象徵)
+7 (代表) /r/SymbolOf_END
+#/r/HasSubevent0 特例
+7 (代表) /r/HasSubevent0_START
+
+8 (很渴望/很想要/很喜歡) /r/Desires_END
+8 (很) (渴望/想要/喜歡) /r/Desires_END
+8 (渴望/想要/喜歡) /r/Desires_END
+
+16 (不想要/不喜歡) /r/NotDesires_END
+16 (痛恨/懼怕/討厭) /r/NotDesires_END
+
+9 (首先要) /r/HasFirstSubevent_END
+9 (要先) /r/HasFirstSubevent_END
+
+10 (你會) /r/HasSubevent_END
+10 (你將會) /r/HasSubevent_END
+10 (你) (將會) /r/HasSubevent_END
+10 (可以/能夠) /r/HasSubevent1_END
+
+11 (是為了) /r/MotivatedByGoal1_END
+11 (是) (為了) /r/MotivatedByGoal1_END
+11 (目的) (是) /r/MotivatedByGoal1_END
+11 (為了) /r/MotivatedByGoal1_END
+11 (會想要) /r/MotivatedByGoal2_START
+11 (會) (想要) /r/MotivatedByGoal2_START
+11 (想要/會想) /r/MotivatedByGoal2_START
+11 /r/MotivatedByGoal2_END (所造成/所引起/所釀成/所導致)
+11 /r/MotivatedByGoal2_END (造成/引起/釀成/導致)
+11 /r/MotivatedByGoal0_END (所造成/所引起/所釀成/所導致)
+11 /r/MotivatedByGoal0_END (造成/引起/釀成/導致)
+
+#複合關係
+#12 /r/AtLocation_END /r/CapableOf_END
+#12 (在) /r/AtLocation_END /r/CapableOf_END
+# 被server 擋住了 (429 Too Many Requests)
+13 /r/HasProperty_END (的) TOPIC
+13 /r/HasProperty_END (的) /r/IsA_END
+13 /r/HasProperty_END (的) /r/PartOf_END
+
+14 /r/MadeOf_END (的) TOPIC
+14 /r/MadeOf_END (的) /r/IsA_END
+14 /r/MadeOf_END (的) /r/PartOf_END
+14 /r/MadeOf0_END (的) TOPIC
+14 /r/MadeOf0_END (的) /r/IsA_END
+14 /r/MadeOf0_END (的) /r/PartOf_END
+
+#列舉同關係
+15 /r/HasProperty_END (也/又) /r/HasProperty_END

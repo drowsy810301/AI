@@ -1,8 +1,10 @@
-*.json
 *.txt
 *.log
+*.json
 .project
 .classpath
-
 bin/
+pic/
 CKIPClient/
+src/ai/net/MicrosoftTranslatorKey.java
+src/Config/Translator.properties

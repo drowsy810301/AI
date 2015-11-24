@@ -1,146 +1,247 @@
 package ai.word;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import ai.exception.BopomofoException;
+import ai.exception.RelationConvertException;
+import ai.exception.RelationWordException;
+import ai.exception.TopicWordException;
+import ai.net.BopomofoCrawler;
+
 public class WordPile {
 	
-	private ArrayList<ArrayList<ChineseWord>> nounWord = new ArrayList<ArrayList<ChineseWord>>();
-	private ArrayList<ArrayList<ChineseWord>> adjWord = new ArrayList<ArrayList<ChineseWord>>();
-	private ArrayList<ArrayList<ChineseWord>> verbWord = new ArrayList<ArrayList<ChineseWord>>();
-	private ChineseWord[] wordList;
+	/* relationPile 把詞依照 relation 分類。第一層 index 依照 relation 分類，
+	 * 第二層 index 依照詞是在 star/end 分類，第三層 index 依照詞的長度分類  */
+	private ArrayList<ArrayList<ArrayList<ArrayList<ChineseWord>>>>  relationPile = new ArrayList<ArrayList<ArrayList<ArrayList<ChineseWord>>>>();
+	private ArrayList<ArrayList<ChineseWord>> topicWord = new ArrayList<ArrayList<ChineseWord>>();
+	private ArrayList<ChineseWord> allWords;
+	private int totalWordCount;
+	private ChineseWord topic;
+	private int topicWordType;
+	private Random rand = new Random();
+	private HashMap<String, Boolean> isRecord;
 	
-	public WordPile(ChineseWord[] wordList) {
-		this.wordList = wordList;
-		for ( int i  = 0 ; i <= 3 ; i++){
-			nounWord.add(new ArrayList<ChineseWord>());
-			adjWord.add(new ArrayList<ChineseWord>());
-			verbWord.add(new ArrayList<ChineseWord>());
+	public WordPile(String topic, int wordType) {
+		initLsit();
+		allWords = new ArrayList<ChineseWord>();
+		totalWordCount = 0;
+		isRecord = new HashMap<String, Boolean>();
+		SetTopic(topic, wordType);
+	}
+	private void SetTopic(String topic, int wordType){
+		try {
+			this.topicWordType = wordType;
+			this.topic = new ChineseWord(topic, BopomofoCrawler.getBopomofo(topic), wordType, Relation.TOPIC,Relation.START,"主題：" + topic);
+			topicWord.get(this.topic.getLength()).add(this.topic);
+		} catch (BopomofoException e) {
+			e.printStackTrace();
+			System.exit(1);
 		}
-		ClassifyWords();
 	}
 	
-	public WordPile(JSONObject json){
-		
-		for ( int i  = 0 ; i <= 3 ; i++){
-			nounWord.add(new ArrayList<ChineseWord>());
-			adjWord.add(new ArrayList<ChineseWord>());
-			verbWord.add(new ArrayList<ChineseWord>());
+	public ChineseWord getTopic(){
+		return topic;
+	}
+	
+	public ChineseWord getTopicWord(int length) throws TopicWordException{
+		if (length > 3 || topicWord.get(length).isEmpty()){
+			throw new TopicWordException(length);
+		}
+		else{
+			int index = rand.nextInt(topicWord.get(length).size());
+			return topicWord.get(length).get(index);
+		}
+	}
+	
+	public void addTopicWord(String topic){
+		try {
+			ChineseWord word = new ChineseWord(topic, BopomofoCrawler.getBopomofo(topic), topicWordType, Relation.TOPIC,Relation.START,"topic : "+topic);
+			topicWord.get(word.getLength()).add(word);
+		} catch (BopomofoException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void addTopicWord(ChineseWord word){
+		topicWord.get(word.getLength()).add(word);
+	}
+	
+	public void addWords(List<ChineseWord> wordList){
+		for (int i = 0 ; i < wordList.size() ; i++){
+			allWords.add(wordList.get(i));
 		}
 		
-		JSONArray arr = json.optJSONArray("wordPile");
-		this.wordList = new ChineseWord[arr.length()];
-		if ( arr != null){
-			for ( int i = 0 ; i < arr.length() ; i++){
-				JSONObject item;
-				try {
-					item = arr.getJSONObject(i);
-					wordList[i] = new ChineseWord(item.optString("word"),GetBopomofo(item.optJSONArray("bopomofo")), 
-							GetTone(item.optJSONArray("tone")),item.optInt("wordType"),item.optInt("length"));
-				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+		for (ChineseWord word : wordList){
+			if(!isRecord.containsKey(word.getWord())){
+				isRecord.put(word.getWord(), true);
+				Relation relation = word.getRelation();
+				if (relation.getIndex() >= 0){
+					relationPile.get(relation.getIndex()).get(word.getStartOrEnd()).get(word.getLength()).add(word);
 				}
-				
-				
+				else if (relation == Relation.TOPIC){
+					addTopicWord(word);
+				}
+				totalWordCount += 1;
+			}
+			else {
+				//System.err.println(word.getWord()+"已經出現過了");
 			}
 		}
-		ClassifyWords();
+		System.out.printf("目前共有 %d 個詞\n",totalWordCount);
 	}
 	
-	private int[] GetTone(JSONArray arr){
-		int[] tone = new int[arr.length()];
-		for (int i = 0 ; i < arr.length() ; i++){
-			tone[i] = arr.optInt(i);
-		}
-		
-		return tone;
-	}
-	private char[] GetBopomofo(JSONArray arr){
-		char[] bopomofo = new char[arr.length()];
-		for (int i = 0 ; i < arr.length() ; i++){
-			bopomofo[i] = arr.optString(i).charAt(0);
-		}
-		return bopomofo;
+	public void addWords(ChineseWord[] wordList){
+		addWords(Arrays.asList(wordList));
 	}
 	
-	public String GetJSONString(){
+	
+	
+	public int getTotalWordCount() {
+		return totalWordCount;
+	}
+	
+	/**
+	 * nounWord 儲存名詞，第 i 個 list 儲存長度是 i+1 的詞
+	 * adjWord 是名詞，verbWord 存動詞，結構和 nounWord 相同
+	 * 
+	 * relationPile 則是把詞依照 relation 分類
+	 * 第一層 index 依照 relation 分類
+	 * 第二層 index 依照詞是在 star/end 分類
+	 * 第三層 index 依照詞的長度分類 
+	 */
+	private void initLsit(){
+		for ( int i = 0 ; i < Relation.TOTAL_RELATION ; i++){
+			relationPile.add(new ArrayList<ArrayList<ArrayList<ChineseWord>>>());
+			relationPile.get(i).add(new ArrayList<ArrayList<ChineseWord>>());
+			relationPile.get(i).add(new ArrayList<ArrayList<ChineseWord>>());
+			relationPile.get(i).get(0).add(new ArrayList<ChineseWord>());
+			relationPile.get(i).get(0).add(new ArrayList<ChineseWord>());
+			relationPile.get(i).get(0).add(new ArrayList<ChineseWord>());
+			relationPile.get(i).get(0).add(new ArrayList<ChineseWord>());
+			relationPile.get(i).get(1).add(new ArrayList<ChineseWord>());
+			relationPile.get(i).get(1).add(new ArrayList<ChineseWord>());
+			relationPile.get(i).get(1).add(new ArrayList<ChineseWord>());
+			relationPile.get(i).get(1).add(new ArrayList<ChineseWord>());	
+		}
+		for (int i = 0 ; i <= 3 ; i++)
+			topicWord.add(new ArrayList<ChineseWord>());
+	}
+	
+	public String getJSONString(){
 		JSONObject json = new JSONObject();
 		JSONArray arr = new JSONArray();
-		for ( ChineseWord word : wordList){
+		for ( ChineseWord word : allWords){
 			JSONObject obj = new JSONObject(word);
 			arr.put(obj);
 		}
+		
 		try {
+			json.put("totalWord", totalWordCount);
 			json.put("wordPile",arr);
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return "{}";
 		}
 		return json.toString();
 	}
 	
-	private void ClassifyWords(){
-		System.out.printf("===詞庫中總共有%d個詞===\n",wordList.length);
-		for (ChineseWord word : wordList){
-			/*一個詞可能會有很多詞性*/
-			if ( (word.getWordType() & ChineseWord.noun) > 0){
-				nounWord.get(word.getLength()).add(word);
-			}
-			if ((word.getWordType() & ChineseWord.adj) > 0){
-				adjWord.get(word.getLength()).add(word);
-			}
-			if ((word.getWordType() & ChineseWord.verb) > 0){
-				verbWord.get(word.getLength()).add(word);
-			}
-		}
-	}
 	
-	public ChineseWord GetAWord(int wordType, int wordLength) {
-		ArrayList<ChineseWord> list;
-		Random rand = new Random();
-		if ((wordType & ChineseWord.noun) > 0){
-			list =nounWord.get(wordLength);
-		}
-		else if ((wordType & ChineseWord.adj) > 0){
-			list =adjWord.get(wordLength);
-		}
-		else if ((wordType & ChineseWord.verb) > 0){
-			list =verbWord.get(wordLength);
+	/**
+	 * 從 relationPile 中隨機取出一個符合條件的詞，若是沒有符合的詞則會回傳null
+	 * 
+	 * @param relation 參見ai.word.Relation
+	 * @param startOrEnd start : 0 / end : 1
+	 * @param length 詞的長度
+	 * @return 
+	 * @throws RelationWordException 
+	 */
+	public ChineseWord getRlationWord(Relation relation,int startOrEnd, int length) throws RelationWordException{
+		ArrayList<ChineseWord> list = relationPile.get(relation.getIndex()).get(startOrEnd).get(length);
+		
+		if (list.size() == 0){
+			throw new RelationWordException(relation.getIndex(),length);
 		}
 		else{
-			System.err.println("error : invalid word type");
-			System.exit(1);
-			return null;
+			int index = rand.nextInt(list.size());
+			return list.get(index);
 		}
-		return list.get(rand.nextInt(list.size()));
+		
 	}
 	
 	public String toString(){
 		StringBuilder sb = new StringBuilder();
-		
-		sb.append("=== 名詞清單 ===\n");
-		for ( ArrayList<ChineseWord> list : nounWord ){
-			for ( ChineseWord word : list){
-				sb.append(word.toString());
-			}
-		}
-		sb.append("=== 形容詞清單 ===\n");
-		for ( ArrayList<ChineseWord> list : adjWord ){
-			for ( ChineseWord word : list){
-				sb.append(word.toString());
-			}
-		}
-		sb.append("=== 動詞清單 ===\n");
-		for ( ArrayList<ChineseWord> list : verbWord ){
-			for ( ChineseWord word : list){
-				sb.append(word.toString());
+		sb.append(String.format("詞庫中共有 %d 個詞\n",totalWordCount));
+		for (int i = 0 ; i < Relation.TOTAL_RELATION ; i++){
+			try {
+				sb.append(Relation.getRelation(i).toString()+"\n");
+				sb.append("start : ");
+				for ( int j = 1 ; j <= 3 ;j++){
+					sb.append(relationPile.get(i).get(0).get(j).size());
+					if ( j < 3)
+						sb.append(" ,");
+				}
+				sb.append('\n');
+				sb.append("end : ");
+				for ( int j = 1 ; j <= 3 ;j++){
+					sb.append(relationPile.get(i).get(1).get(j).size());
+					if ( j < 3)
+						sb.append(" ,");
+				}
+				sb.append('\n');
+				sb.append('\n');
+			} catch (RelationConvertException e) {
+				System.err.println(e.getMessage());
+				e.printStackTrace();
+				System.exit(1);
 			}
 		}
 		return sb.toString();
+	}
+	
+	public void printWordPileStatistic(){
+		System.out.println("=== 詞庫統計 ===");
+		System.out.println("詞庫共有"+totalWordCount+"個詞");
+		for (int i = 0 ; i < Relation.TOTAL_RELATION ; i++){
+			try {
+				ArrayList<ArrayList<ChineseWord>> temp;
+				System.out.println(i+". "+Relation.getRelation(i).toString());
+				temp = relationPile.get(i).get(Relation.START);
+				System.out.printf("start : %d %d %d\n",temp.get(1).size(),temp.get(2).size(),temp.get(3).size());
+				temp = relationPile.get(i).get(Relation.END);
+				System.out.printf("start : %d %d %d\n",temp.get(1).size(),temp.get(2).size(),temp.get(3).size());
+				System.out.println();
+			} catch (RelationConvertException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+		}
+	}
+	
+	public void printBopomofo(){
+		HashMap<Character, Integer> rhythm = new HashMap<>();
+		for (ChineseWord word: allWords){
+			char r = word.getRhythm();
+			if (rhythm.containsKey(r)){
+				rhythm.put(r,rhythm.get(r)+1);
+			}
+			else{
+				rhythm.put(r,1);
+			}
+		}
+		System.out.println("=== 韻腳統計 ===");
+		for (Character c : rhythm.keySet()){
+			System.out.println(c+" : "+rhythm.get(c));
+		}
+	}
+	public ArrayList<ChineseWord> getAllWords() {
+		return allWords;
 	}
 }
