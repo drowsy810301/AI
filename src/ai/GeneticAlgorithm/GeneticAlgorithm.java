@@ -25,13 +25,13 @@ public class GeneticAlgorithm {
 	private static final boolean DEBUG = false ;
 	//======================參數設定======================
     //族群大小
-    private static final int POPULATION_SIZE = 300;
+    private static final int POPULATION_SIZE = 1000;
     //交配親代競爭群組大小
     private static final int SELECTED_GROUP_SIZE = 5;
     //突變機率
     private static final double MUTATION_RATE = 0.1;
     //終止條件
-	private static final int maxGeneration = 400;
+	private static final int maxGeneration = 200;
 	private static final int targetScore = 1 + PoemTemplate.TOTAL_SCORE;
 	//===================================================
 
@@ -277,9 +277,8 @@ public class GeneticAlgorithm {
 	/**
 	 * 	逐一替換每個詞，若替換後分數較低則把詩復原
 	 */
-    // TODO polish()
     private void polish(){
-		if (DEBUG) System.out.println("===Polish===");
+    	if (DEBUG) System.out.println("===Polish===");
 		
 		for(int i = 0 ; i < POPULATION_SIZE ; i ++){
 			for (int j = 0 ; j < row ; j++){

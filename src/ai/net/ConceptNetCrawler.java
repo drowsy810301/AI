@@ -212,6 +212,7 @@ public class ConceptNetCrawler {
 		detailData.put(Relation.MotivatedByGoal, detailMotivatedByGoal);
 		detailData.put(Relation.MadeOf,detailMadeOf);
 		
+		//TODO modify[]
 		surfaceText = surfaceText.replaceAll("\\[\\[.*?\\]\\]", "");
 		switch (relation){
 		case Desires:

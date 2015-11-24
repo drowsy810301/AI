@@ -23,21 +23,19 @@ import ai.word.Relation;
 import ai.word.WordPile;
 
 public class SentenceMaker {
-	private static boolean TURN_ON_MULTIPLE_RELATION_CHECK = false; 
 	private final static String paddingWordFile = "paddingWord.data";
 	private final static String sentenceTypeFile = "sentenceType.data";
-	private final static int SPECIAL_TYPE = 12; 
 	
 	private MyRandom rand = new MyRandom();
 	private WordPile wordPile;
 	/*第一層: 第幾個句型, 第二層:第幾個element*/
-	private int[] sentenceTag;	// 0: 單relation句型, 1:複relation句型
+	private int[] sentenceTag;	
 	private String[][] sentenceTemplate;
 	private int countType = 0;
 	private HashMap<String, ChineseWord> paddingWordList = new HashMap<String, ChineseWord>();
 	private ArrayList<Integer> availabelSentenceTemplate;
 	private int[] availableSentences;
-	private int availableTypeCount = 0, availableSentenceCount = 0;
+	private int availableTagCount = 0, availableSentenceCount = 0;
 	/**
 	 * 從 paddingWordFile 和 sentenceTypeFile 分別載入
 	 * @param wordPile
@@ -59,16 +57,27 @@ public class SentenceMaker {
 		}
 	}
 	
+	/**
+	 * availabelSentenceTemplate 會把可造的句型平均化
+	 * 例如 
+	 * type1,tag=1
+	 * type2,tag=2
+	 * type3,tag=1
+	 * type4,tag=2
+	 * type5,tag=3
+	 * type6,tag=1
+	 * 
+	 * 則最後availabelSentenceTemplate會存 {type1,type3,type6,type2,type4,type2,type5,type5,type5}
+	 * 確保每個tag都有3句
+	 */
 	private void getAvailableSentenceTemplate(){
 		int[] availableSentenceTag = new int[100];
 		ArrayList<Integer> startIndex = new ArrayList<>();
 		availabelSentenceTemplate = new ArrayList<>();
 		availableSentences = new int[countType];
+		boolean[] availableTags = new boolean[100];
+		availableTagCount = 0;
 		for (int i = 0 ; i < countType ; i++){
-			 if (sentenceTag[i] == SPECIAL_TYPE){
-				 availabelSentenceTemplate.add(i);
-				break;
-			}
 			HashMap<String,Boolean> countSentence = new HashMap<String,Boolean>();
 			for (int j = 0 ; j < 100 ; j++){
 				PoemSentence sentence;
@@ -84,11 +93,15 @@ public class SentenceMaker {
 				}
 			}
 			if (availableSentences[i] > 0){
-				availableTypeCount += 1;
+				if (availableTags[sentenceTag[i]] == false){
+					availableTags[sentenceTag[i]] = true;
+					availableTagCount += 1;
+				}
 				availabelSentenceTemplate.add(i);
 				availableSentenceTag[sentenceTag[i]] += 1;
 			}
 		}
+		//TODO
 		
 		availabelSentenceTemplate.sort(new Comparator<Integer>() {
 			@Override
@@ -255,14 +268,7 @@ public class SentenceMaker {
 			}
 		}
 		if (isDone){
-			if (sentenceTag[type] == SPECIAL_TYPE && TURN_ON_MULTIPLE_RELATION_CHECK){
-				
-				if(isMultipleRelationValid(words[wordLocation[0]].getWord(), words[wordLocation[1]].getWord())){
-					return new PoemSentence(type,words,composition,sentenceTag[type]);
-				}
-				throw new MakeSentenceException(composition,sentenceTemplate[type]);
-			}
-			else if (sentenceTag[type] == 15){
+			if (sentenceTag[type] == 15){
 				// /r/HasProperty_END (也/又) /r/HasProperty_END 兩個形容詞不可以一樣
 				if (words[0].getWord().equals(words[2].getWord())){
 					throw new MakeSentenceException(composition,sentenceTemplate[type]);
@@ -388,7 +394,7 @@ public class SentenceMaker {
 		return availableSentenceCount;
 	}
 	
-	public int getAvailableTypeCount(){
-		return availableTypeCount;
+	public int getAvailableTagCount(){
+		return availableTagCount;
 	}
 }

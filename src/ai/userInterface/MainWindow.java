@@ -30,7 +30,7 @@ import javax.swing.border.TitledBorder;
 import org.json.JSONObject;
 
 import ai.GeneticAlgorithm.GeneticAlgorithm;
-import ai.net.ConceptNetCrawler;
+import ai.net.Database;
 import ai.sentence.SentenceMaker;
 import ai.word.ChineseWord;
 import ai.word.WordPile;
@@ -58,7 +58,7 @@ public class MainWindow extends JFrame{
 		new MainWindow();
 	}
 	
-	MainWindow(){
+	public MainWindow(){
 		setLocation(10, 10);
 		setSize(455, 310);
 		setResizable(false);
@@ -88,7 +88,7 @@ public class MainWindow extends JFrame{
 		ga = new GeneticAlgorithm(8, 5, wordPile, maker);
 		ga.setProgressBar(progressPanel.progressBar);
 		statisticalPanel.txt_countWordValue.setText(Integer.toString(wordPile.getTotalWordCount()));
-		statisticalPanel.txt_countSentenceTypeValue.setText(Integer.toString(maker.getAvailableTypeCount()));
+		statisticalPanel.txt_countSentenceTypeValue.setText(Integer.toString(maker.getAvailableTagCount()));
 		statisticalPanel.txt_countSentenceValue.setText(Integer.toString(maker.getAvailableSentenceCount()));
 	}
 	
@@ -231,6 +231,7 @@ public class MainWindow extends JFrame{
 		private static final long serialVersionUID = -3555715580638648436L;
 		private JRadioButton netSource, fileSource;
 		
+		private Database database;
 		private File sourceJsonFile = null;
 		private JTextField txt_file;
 		private JTextField txt_topic;
@@ -238,6 +239,8 @@ public class MainWindow extends JFrame{
 		private JComboBox<String> cbox_wordType;
 		private Color defaultBackgroungColor;
 		public WordSourcePanel() {
+			
+			database = new Database("ConceptNet.db");
 			setSize(210, 200);
 			setLayout(null);
 			setBorder(BorderFactory.createTitledBorder("詞彙來源"));
@@ -354,7 +357,7 @@ public class MainWindow extends JFrame{
 						JOptionPane.showMessageDialog(MainWindow.this,"請輸入主題","錯誤",JOptionPane.ERROR_MESSAGE);
 					}
 					else{
-						System.out.println("read source from Concept Net");
+						System.out.println("read source from Database");
 						new Thread(new Runnable() {
 							@Override
 							public void run() {
@@ -372,9 +375,11 @@ public class MainWindow extends JFrame{
 								else {
 									topicWordType = 0;
 								}
-								ConceptNetCrawler crawler = new ConceptNetCrawler(txt_topic.getText(),topicWordType);
-								crawler.setLoadingBar(progressPanel.progressBar);
-								ChineseWord[] wordList = crawler.getWordList_ChineseSource();
+								//Get words from database instead 
+								//ConceptNetCrawler crawler = new ConceptNetCrawler(txt_topic.getText(),topicWordType);
+								//crawler.setLoadingBar(progressPanel.progressBar);
+								//ChineseWord[] wordList = crawler.getWordList_ChineseSource();
+								ChineseWord[] wordList = database.select_by_topic(txt_topic.getText(),topicWordType);
 								wordArrayList = new ArrayList<>(Arrays.asList(wordList));
 								MainWindow.this.topic = txt_topic.getText();
 								modifyWindow = new ModifyWindow(MainWindow.this,topic,topicWordType,wordArrayList);

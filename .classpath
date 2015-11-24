@@ -4,5 +4,6 @@
 	<classpathentry kind="lib" path="java-json.jar"/>
 	<classpathentry kind="lib" path="microsoft-translator-java-api-0.6.2-jar-with-dependencies.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="D:/workspace/java/AI_poem/sqlite-jdbc-3.8.11.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

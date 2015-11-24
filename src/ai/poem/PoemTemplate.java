@@ -34,7 +34,7 @@ public class PoemTemplate implements Comparable<PoemTemplate>{
 	public final static int TOTAL_SCORE = MAX_RHYTHM_SCORE + MAX_TONE_SCORE + MAX_ANTITHESIS_SCORE + MAX_DIVERSITY_SCORE + MAX_PATTERN_SCORE;
 	
 	// 設定個分數的最低門檻，不足的項目分數會直接變成1分，確保詩在每個項目都有一定的品質
-	public final static int MIN_RHYTHM_SCORE = 50;
+	public final static int MIN_RHYTHM_SCORE = 100;
 	public final static int MIN_TONE_SCORE = 50;
 	public final static int MIN_ANTITHESIS_SCORE = 50;
 	public final static int MIN_DIVERSITY_SCORE = 50;
@@ -93,7 +93,7 @@ public class PoemTemplate implements Comparable<PoemTemplate>{
 	 * @throws MakeSentenceException 
      */
     public static PoemTemplate getRandomPoem(int row,int col,WordPile wordPile,SentenceMaker maker) throws Exception{
-    	HashMap<String, Boolean> repeatSentence = new HashMap<String, Boolean>();
+    	HashMap<String, Integer> repeatSentence = new HashMap<String, Integer>();
     	PoemSentence[] poem = new PoemSentence[row];
     	int[] repeatSentenceTag = new int[100];
     	
@@ -117,16 +117,22 @@ public class PoemTemplate implements Comparable<PoemTemplate>{
     	return new PoemTemplate(row, col, poem);
     }
     
-    private static boolean tryToMakeASentence(SentenceMaker maker,int[] repeatSentenceTag, HashMap<String, Boolean> repeatSentence,PoemSentence[] poem, int rowIndex, int[] lineComposition){
+    private static boolean tryToMakeASentence(SentenceMaker maker,int[] repeatSentenceTag, HashMap<String, Integer> repeatSentence,PoemSentence[] poem, int rowIndex, int[] lineComposition){
     	int maxTry = 100;
     	while (maxTry > 0){
 			try {
 				poem[rowIndex] = maker.makeSentence(lineComposition);
-				if (repeatSentence.containsKey(poem[rowIndex].encode()) || repeatSentenceTag[poem[rowIndex].getSentenceTag()] >= 2){
+				String index = poem[rowIndex].encode();
+				if ((repeatSentence.containsKey(index)&&repeatSentence.get(index) > 1) || repeatSentenceTag[poem[rowIndex].getSentenceTag()] >= 2){
 					maxTry -= 1;
 				}
 				else{
-					repeatSentence.put(poem[rowIndex].encode(),true);
+					if (repeatSentence.containsKey(index)){
+						repeatSentence.put(index, repeatSentence.get(index)+1);
+					}
+					else{
+						repeatSentence.put(index,1);
+					}
 					repeatSentenceTag[poem[rowIndex].getSentenceTag()] += 1;
 					return true;
 				}
@@ -184,6 +190,7 @@ public class PoemTemplate implements Comparable<PoemTemplate>{
 	 */
 	private int getDiversityScore(){
 		final int MAX_WORD_REPEATED_TIME = 2;
+		int[] recordTag = new int[100];
 		HashMap<String, Integer> repeatedWord = new HashMap<String, Integer>();
 		HashMap<String, Boolean> repeatedSentence = new HashMap<String,Boolean>();
 		
@@ -211,6 +218,25 @@ public class PoemTemplate implements Comparable<PoemTemplate>{
 				else{
 					repeatedWord.put(word, 1);
 				}
+			}
+		}
+		
+		for (int i = 0 ; i < row ; i+=2){
+			int tag1 =  poem[i].getSentenceTag();
+			int tag2 =  poem[i+1].getSentenceTag();
+			
+			if (recordTag[tag1] >= 2){
+				return 0;
+			}
+			else{
+				recordTag[tag1] += 1;
+			}
+			
+			if (recordTag[tag2] >= 2){
+				return 0;
+			}
+			else{
+				recordTag[tag2] += 1;
 			}
 		}
 		
@@ -412,10 +438,13 @@ public class PoemTemplate implements Comparable<PoemTemplate>{
 		else
 			return score;
 	}
-
+	/**
+	 * 限制同一個tag的句型最多只能出現2次，否則分數歸0
+	 * 如果相鄰兩句符合特定的句型結構就加分
+	 * @return
+	 */
 	private int getPatternScore(){
 		int countPattern = 0;
-		int[] recordTag = new int[100];
 		HashMap<Integer, Boolean> recordPattern = new HashMap<>();
 		for (int i = 0 ; i < row ; i+=2){
 			int tag1 =  poem[i].getSentenceTag();
@@ -433,20 +462,6 @@ public class PoemTemplate implements Comparable<PoemTemplate>{
 					}	
 					countPattern += 1;
 				}
-			}
-			
-			if (recordTag[tag1] >= 2){
-				return 0;
-			}
-			else{
-				recordTag[tag1] += 1;
-			}
-			
-			if (recordTag[tag2] >= 2){
-				return 0;
-			}
-			else{
-				recordTag[tag2] += 1;
 			}
 		}
 		
@@ -523,6 +538,12 @@ public class PoemTemplate implements Comparable<PoemTemplate>{
 		}
 	}
 	
+	/**
+	 * 
+	 * @param tag1 第一句的tag
+	 * @param tag2 第2句的tag 
+	 * @return 兩句是否符合特定句型結構
+	 */
 	public boolean matchSentencePattern(int tag1,int tag2){
 		for (int i = 0 ; i < firstSentenceTags.size() ; i++){
 			if (firstSentenceTags.get(i).contains(tag1) && secondSentenceTags.get(i).contains(tag2))
